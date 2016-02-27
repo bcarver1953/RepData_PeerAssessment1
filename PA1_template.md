@@ -1,12 +1,8 @@
----
-title: "Reproducable Research Project 1"
-output:
-  html_document:
-    keep_md: yes
----
+# Reproducable Research Project 1
 
 ####  Libaries used:
-```{r warning=FALSE, message=FALSE, results="hide",comment="#"}
+
+```r
 library(data.table)
 library(lattice)
 
@@ -17,19 +13,20 @@ setwd("C:/bnc/Coursera/Reproducable Research/Project 1")
 
 ### Read and process the incoming data.
 
-```{r}
+
+```r
 # Read  the base data rows
 stepdata <- read.csv("activity.csv",header=TRUE)
 
 # Reformat date
 stepdata$date  <- as.Date(stepdata$date, format="%Y-%m-%d")
 stepdata$intvl <- as.factor(stepdata$interval)
-
 ```
 
 
 ### Calculate "total steps per day"" and present in a histogram.
-```{r hist_steps_per_day}
+
+```r
 # Calculate the total number of steps per day
 Dailysteps <- aggregate(stepdata$steps, list(date=stepdata$date), na.rm=FALSE, sum)
 names(Dailysteps) = c("date","steps")  # Rename the default "x" variable
@@ -40,27 +37,28 @@ hist(Dailysteps$steps
      ,main="Histogram of Steps per Day"
      ,xlab="Daily Steps"
      )
-
 ```
 
+![](PA1_template_files/figure-html/hist_steps_per_day-1.png)
+
 ### Calculate and report Mean and Median steps per day:
-```{r meanmed}
+
+```r
 # Calculate and report the mean and median of the total number of steps taken per day
 meanDailySteps <- mean(Dailysteps$steps, na.rm=TRUE)
 medianDailySteps <- median(Dailysteps$steps, na.rm=TRUE)
 mnds <- format(meanDailySteps, digits=2, nsmall=0, big.mark=",")
 mdds <- format(medianDailySteps, digits=2, nsmall=0, big.mark=",")
-
-
 ```
-Mean daily steps: `r mnds`  
-Median daily steps: `r mdds`  
+Mean daily steps: 10,766  
+Median daily steps: 10,765  
 
   
     
 ### Time series plot of average Steps per Day by interval.
 
-```{r time_series}
+
+```r
 # Calculate the total number of steps per interval (regardless of day)
 meandt <- data.table(stepdata)[,list(mean=mean(as.numeric(steps), na.rm=TRUE)
                               ,No_of_obs=length(steps)
@@ -80,30 +78,31 @@ xyplot(mean ~ interval,
 )
 ```
 
+![](PA1_template_files/figure-html/time_series-1.png)
+
 ### Find the interval with the maximum number of steps
-```{r}
+
+```r
 # Which 5-minute interval, on average across all the days in the dataset, 
 #  contains the maximum number of steps?
 
 maxInterval <- meandf$interval[which.max(meandf$mean)]
 maxintvl    <- format(maxInterval, digits=2, nsmall=0, big.mark=",")
-
 ```
 
-The time series interval with the maximum steps per day is: `r maxintvl`
+The time series interval with the maximum steps per day is: 835
 
 ***
 ### Missing data.
 
-```{r}
+
+```r
 # Calculate and report the total number of missing values
 stepNAs <- with(stepdata,ftable(is.na(steps)))[2]
 mvals <- format(stepNAs, digits=2, nsmall=0, big.mark=",")
-
-
 ```
 
-The number of missing values in the data set is: `r mvals`
+The number of missing values in the data set is: 2,304
 
 
 
@@ -113,7 +112,8 @@ The number of missing values in the data set is: `r mvals`
 ### Filling in missing values 
 We will now impute values for missing intervals by replacing each missing value with its corresponding mean steps for that interval across all days.
 
-```{r}
+
+```r
 # Previously we had calculated the total number of steps per interval 
 #   (regardless of day) in the meandf data frame
 
@@ -131,7 +131,6 @@ imputed$impsteps[is.na(imputed$impsteps)] <- as.integer(imputed$mean[is.na(imput
 ImpDailysteps <- aggregate(imputed$impsteps,
         list(date=imputed$date), na.rm=FALSE, sum)
 names(ImpDailysteps) = c("date","impsteps")  # Rename the default "x" variable
-
 ```
 
 
@@ -142,7 +141,8 @@ Comparing daily steps per day with missing values as NA's with the imputed value
 
 ##### Histograms without and with imputed values. 
 
-```{r hist_missing_data_compares}
+
+```r
 # Make a histogram of the total number of steps taken each day
 #  comparing the original with NA's to the new imputed values
 par(mfrow = c(1,2))
@@ -160,13 +160,15 @@ hist(ImpDailysteps$impsteps
      ,xlab="missing values imputed as interval mean"
      ,ylim=c(0,30)
 )
-
 ```
+
+![](PA1_template_files/figure-html/hist_missing_data_compares-1.png)
 
 
 ### Comparing the mean and median with and without the imputed missing values
 
-```{r}
+
+```r
 # Recalculate, format  and report the mean and median of 
 #  the total number of steps taken per day
 
@@ -183,15 +185,15 @@ meandsi <- format(meanImpDailySteps, digits=2, nsmall=0, big.mark=",")
 
 medianImpDailySteps <- median(ImpDailysteps$impsteps, na.rm=TRUE)
 meddsi <- format(medianImpDailySteps, digits=2, nsmall=0, big.mark=",")
-
 ```
 
-Mean steps   without imputed values: `r meands` and with `r meandsi`  
-Median steps without imputed values: `r medds` and with `r meddsi`
+Mean steps   without imputed values: 10,766 and with 10,750  
+Median steps without imputed values: 10,765 and with 10,641
 
 ###Investigating weekday versus weekend patterns we find:
 
-```{r weekend_vs_weekday_time_Series}
+
+```r
 # Recode into weekday/weekend
 imputed$weekday <- as.factor(weekdays(imputed$date, abbreviate=TRUE))
 
@@ -215,9 +217,9 @@ data = imputed,
  layout=(c(1,2)),
  col.line = c("blue")
 )
-
-
 ```
+
+![](PA1_template_files/figure-html/weekend_vs_weekday_time_Series-1.png)
 
 In general we see activity in the intervals earlier in the day on weekday days than on weekend days.
 
