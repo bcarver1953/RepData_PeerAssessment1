@@ -1,25 +1,202 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Reproducable Research Project 1"
+output: html_document
 ---
 
-
-## Loading and preprocessing the data
-
-
-
-## What is mean total number of steps taken per day?
-
+Libaries used:
+```{r warning=FALSE, message=FALSE, results="hide",comment="#"}
+library(data.table)
+library(lattice)
+```
 
 
-## What is the average daily activity pattern?
+Read and recode the incoming data
+
+```{r}
+# Read  the base data rows
+stepdata <- read.csv("activity.csv",header=TRUE)
+
+# Reformat date
+stepdata$date  <- as.Date(stepdata$date, format="%Y-%m-%d")
+stepdata$intvl <- as.factor(stepdata$interval)
+
+```
 
 
 
-## Imputing missing values
+```{r}
+# Calculate the total number of steps per day
+Dailysteps <- aggregate(stepdata$steps, list(date=stepdata$date), na.rm=FALSE, sum)
+names(Dailysteps) = c("date","steps")  # Rename the default "x" variable
+
+# Make a histogram of the total number of steps taken each day
+hist(Dailysteps$steps
+     , breaks=10
+     ,main="Histogram of Steps per Day"
+     ,xlab="Daily Steps"
+     )
+
+```
+
+Mean and Median steps per day:
+```{r}
+# Calculate and report the mean and median of the total number of steps taken per day
+meanDailySteps <- mean(Dailysteps$steps, na.rm=TRUE)
+medianDailySteps <- median(Dailysteps$steps, na.rm=TRUE)
+paste("Mean   Daily Steps: "
+        ,format(meanDailySteps, digits=2, nsmall=0, big.mark=","))
+paste("Median Daily Steps: "
+      ,format(medianDailySteps, digits=2, nsmall=0, big.mark=","))
+
+
+```
+
+Time series plot of average Steps per Day by interval
+
+```{r}
+# Calculate the total number of steps per interval (regardless of day)
+meandt <- data.table(stepdata)[,list(mean=mean(as.numeric(steps), na.rm=TRUE)
+                              ,No_of_obs=length(steps)
+)
+,by=list(interval)]
+meandf <- data.frame(meandt)
+
+# Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis)
+#   and the average number of steps taken, averaged across all days (y-axis)
+
+xyplot(mean ~ interval,
+        data = meandf,
+        type = "l",
+        lty = c(1, 2, 2, 1),
+        lwd = 1,
+        col.line = c("blue")
+)
+```
+
+
+```{r}
+# Which 5-minute interval, on average across all the days in the dataset, 
+#  contains the maximum number of steps?
+
+maxInterval <- meandf$interval[which.max(meandf$mean)]
+paste("The 5 Minute Interval with the maximum number of steps is: "
+        ,format(maxInterval, digits=2, nsmall=0, big.mark=","))
+
+```
+
+Missing data:
+
+```{r}
+# Calculate and report the total number of missing values
+stepNAs <- with(stepdata,ftable(is.na(steps)))[2]
+paste("Total number of missing values: "
+      ,format(stepNAs, digits=2, nsmall=0, big.mark=","))
+
+
+```
+
+
+We will now impute values for intervals with no data (NA's) by usign the overall interval mean steps for any interval with missing values.
+
+```{r}
+# Previously we had calculated the total number of steps per interval 
+#   (regardless of day) in te meandf data frame
+
+# From the previously calculated means by interval in the meandf data frame:
+#    bind its columns into a new "imputed" data frame by interval
+imputed <- cbind(stepdata,meandf)
+
+# Assign a new "impsteps" var with the current steps value as the default
+imputed$impsteps <- imputed$steps
+
+# Update only the NA's with the integer value of the mean
+imputed$impsteps[is.na(imputed$impsteps)] <- as.integer(imputed$mean[is.na(imputed$impsteps)])
+
+# Reaggregate by day
+ImpDailysteps <- aggregate(imputed$impsteps, list(date=imputed$date), na.rm=FALSE, sum)
+names(ImpDailysteps) = c("date","impsteps")  # Rename the default "x" variable
+
+# Make a histogram of the total number of steps taken each day
+#  with the imputed data 
+
+# Compare the original with NA's to the new imputed values
+```
+
+Comparing daily steps per day with missing values as NA's with the imputed values we see a difference in the histogram and in the computed mean and median steps per day:
+
+```{r}
+# Make a histogram of the total number of steps taken each day
+par(mfrow = c(1,2))
+hist(Dailysteps$steps
+     , breaks=10
+     ,main="Histogram Steps per Day"
+     ,xlab="Daily Steps - with missing values"
+     ,ylim=c(0,30)
+     )
+
+hist(ImpDailysteps$impsteps
+     , breaks=10
+     ,main=""
+     ,ylab=""
+     ,xlab="missing values imputed as interval mean"
+     ,ylim=c(0,30)
+)
+
+```
 
 
 
-## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+# Recalculate and report the mean and median of the total number of steps taken per day
+meanImpDailySteps <- mean(ImpDailysteps$impsteps, na.rm=TRUE)
+meanImpDailySteps
+medianImpDailySteps <- median(ImpDailysteps$impsteps, na.rm=TRUE)
+medianImpDailySteps
+
+# Before and after imputed values:
+paste("Mean   Daily Steps:"
+        ,format(meanDailySteps, digits=2, nsmall=0, big.mark=","))
+paste("Mean   Daily Steps with imputed values: "
+      ,format(meanImpDailySteps, digits=2, nsmall=0, big.mark=","))
+
+
+paste("Median Daily Steps: "
+      ,format(medianDailySteps, digits=2, nsmall=0, big.mark=","))
+paste("Median Daily Steps with imputed values: "
+      ,format(medianImpDailySteps, digits=2, nsmall=0, big.mark=","))
+
+```
+
+Investigating weekday versus weekend patterns we find:
+
+```{r}
+# Recode into weekday/weekend
+imputed$weekday <- as.factor(weekdays(imputed$date, abbreviate=TRUE))
+
+imputed$weekend[imputed$weekday == "Mon"] <- "Weekday"
+imputed$weekend[imputed$weekday == "Tue"] <- "Weekday"
+imputed$weekend[imputed$weekday == "Wed"] <- "Weekday"
+imputed$weekend[imputed$weekday == "Thu"] <- "Weekday"
+imputed$weekend[imputed$weekday == "Fri"] <- "Weekday"
+imputed$weekend[imputed$weekday == "Sat"] <- "Weekend"
+imputed$weekend[imputed$weekday == "Sun"] <- "Weekend"
+
+
+xyplot(impsteps ~ interval | weekend,
+data = imputed,
+ type = "l",
+ lty = c(1, 2, 2, 1),
+ lwd = c(1, 1, 1, 3),
+ main="Steps per Interval - Weekday versus Weekend Days",
+ ylab="Number of Steps",
+ xlab="Interval",
+col.line = c("blue")
+)
+
+
+```
+
+
+
+
