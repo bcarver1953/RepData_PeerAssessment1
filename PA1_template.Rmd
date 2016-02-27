@@ -7,6 +7,9 @@ output: html_document
 ```{r warning=FALSE, message=FALSE, results="hide",comment="#"}
 library(data.table)
 library(lattice)
+
+
+setwd("C:/bnc/Coursera/Reproducable Research/Project 1")
 ```
 
 
@@ -85,7 +88,7 @@ maxintvl    <- format(maxInterval, digits=2, nsmall=0, big.mark=",")
 
 ```
 
-The time series interval with the maximum steps per day inL `r maxintvl`
+The time series interval with the maximum steps per day is: `r maxintvl`
 
 ***
 ### Missing data.
@@ -110,7 +113,7 @@ We will now impute values for missing intervals by replacing each missing value 
 
 ```{r}
 # Previously we had calculated the total number of steps per interval 
-#   (regardless of day) in te meandf data frame
+#   (regardless of day) in the meandf data frame
 
 # From the previously calculated means by interval in the meandf data frame:
 #    bind its columns into a new "imputed" data frame by interval
@@ -127,13 +130,15 @@ ImpDailysteps <- aggregate(imputed$impsteps,
         list(date=imputed$date), na.rm=FALSE, sum)
 names(ImpDailysteps) = c("date","impsteps")  # Rename the default "x" variable
 
-# Make a histogram of the total number of steps taken each day
-#  with the imputed data 
-
-
 ```
 
-Comparing daily steps per day with missing values as NA's with the imputed values we see a difference in the histogram and in the computed mean and median steps per day:
+
+
+### Comparing measures with and without imputed values.
+
+Comparing daily steps per day with missing values as NA's with the imputed values we see a difference in the histogram and in the computed mean and median steps per day.
+
+##### Histograms without and with imputed values. 
 
 ```{r}
 # Make a histogram of the total number of steps taken each day
@@ -205,12 +210,13 @@ data = imputed,
  main="Steps per Interval - Weekday versus Weekend Days",
  ylab="Number of Steps",
  xlab="Interval",
-col.line = c("blue")
+ layout=(c(1,2)),
+ col.line = c("blue")
 )
 
 
 ```
 
-In general we see a greater numer of steps taken on weekday days than on weekend days.
+In general we see activity in the intervals earlier in the day on weekday days than on weekend days.
 
 
